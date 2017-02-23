@@ -7,8 +7,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -23,7 +25,10 @@ import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apache.commons.io.FileUtils;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import org.junit.Assert;
+import static org.junit.Assert.assertThat;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -70,7 +75,7 @@ public class JSPParserHappyCaseTest
         return Arrays.asList(file.listFiles())
                 .stream()
                 .filter(it -> it.getName().contains("jsp"))
-                //                .filter(it -> it.getName().contains("cset"))
+                //                .filter(it -> it.getName().contains("welcome"))
                 .sorted()
                 .map(eachFile -> Arrays.asList((Object) eachFile.getName(), (Object) eachFile).toArray())
                 .collect(Collectors.toList());
@@ -86,37 +91,10 @@ public class JSPParserHappyCaseTest
 
         // Pass the tokens to the parser
         JSPParser parser = new JSPParser(tokens);
-        parser.addErrorListener(new ANTLRErrorListener()
-        {
-            @Override
-            public void syntaxError(Recognizer<?, ?> rcgnzr, Object o, int i, int i1, String string, RecognitionException re)
-            {
-                System.out.println("Syntac Error Line:" + i + ", Col:" + i1);
+        final ANTLRErrorListenerImpl antlrTestErrorListener = new ANTLRErrorListenerImpl();
+        parser.addErrorListener(antlrTestErrorListener);
 
-                throw re;
-            }
-
-            @Override
-            public void reportAmbiguity(Parser parser, DFA dfa, int i, int i1, BitSet bitset, ATNConfigSet atncs)
-            {
-                System.out.println("Ambigurity detected Line:" + i + ", Col:" + i1);
-            }
-
-            @Override
-            public void reportAttemptingFullContext(Parser parser, DFA dfa, int i, int i1, ATNConfigSet atncs)
-            {
-                System.out.println("AttemptingFullContext:" + i + ", Col:" + i1);
-            }
-
-            @Override
-            public void reportContextSensitivity(Parser parser, DFA dfa, int i, int i1, ATNConfigSet atncs)
-            {
-                System.out.println("ContextSensitivity:" + i + ", Col:" + i1);
-            }
-        });
-
-        printJSPTokens(tokens, lexer);
-
+        //printJSPTokens(tokens, lexer);
         // Specify our entry point
         JSPParser.JspDocumentContext documentContext = parser.jspDocument();
 
@@ -124,6 +102,7 @@ public class JSPParserHappyCaseTest
         ParseTreeWalker walker = new ParseTreeWalker();
         AntlrJSPListener listener = new AntlrJSPListener(parser);
         walker.walk(listener, documentContext);
+        assertThat("No Errors", antlrTestErrorListener.errorList, is(empty()));
     }
 
     private static void printJSPTokens(CommonTokenStream tokens, JSPLexer lexer)
@@ -141,5 +120,47 @@ public class JSPParserHappyCaseTest
         final int type = token.getType();
         final String tokenName = type > 0 ? tokenNames[type] : "<<UNKNOWN>>";
         System.out.println(String.format("(%d,%d) %s -> %s", token.getLine(), column, tokenName, token.getText()));
+    }
+
+    private static class ANTLRErrorListenerImpl implements ANTLRErrorListener
+    {
+
+        public ANTLRErrorListenerImpl()
+        {
+        }
+
+        List<String> errorList = new ArrayList<>();
+
+        @Override
+        public void syntaxError(Recognizer<?, ?> rcgnzr, Object o, int i, int i1, String string, RecognitionException re)
+        {
+            final String message = "Syntax Error Line:" + i + ", Col:" + i1 + "(" + o.toString() + ")";
+            System.out.println(message);
+            errorList.add(message);
+            if (re != null)
+            {
+                throw re;
+            }
+        }
+
+        @Override
+        public void reportAmbiguity(Parser parser, DFA dfa, int i, int i1, BitSet bitset, ATNConfigSet atncs)
+        {
+            final String message = "Ambigurity detected Line:" + i + ", Col:" + i1;
+            errorList.add(message);
+            System.out.println(message);
+        }
+
+        @Override
+        public void reportAttemptingFullContext(Parser parser, DFA dfa, int i, int i1, ATNConfigSet atncs)
+        {
+            System.out.println("AttemptingFullContext:" + i + ", Col:" + i1);
+        }
+
+        @Override
+        public void reportContextSensitivity(Parser parser, DFA dfa, int i, int i1, ATNConfigSet atncs)
+        {
+            System.out.println("ContextSensitivity:" + i + ", Col:" + i1);
+        }
     }
 }

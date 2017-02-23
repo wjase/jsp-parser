@@ -5,8 +5,6 @@
  */
 package com.cybernostics.jsp.parser;
 
-import java.util.Optional;
-
 /**
  *
  * @author jason //
@@ -29,9 +27,8 @@ public class AntlrJSPListener extends JSPParserBaseListener
     @Override
     public void enterJspElement(JSPParser.JspElementContext ctx)
     {
-        System.out.println("Element:" + ctx.toStringTree());
-        Optional<JSPParser.HtmlContentContext> content = Optional.ofNullable(ctx.htmlContent());
-        System.out.println("has content" + content.isPresent());
+        System.out.println("Element:" + ctx.getText());
+        System.out.println("has content" + !ctx.htmlContent().isEmpty());
         ctx.atts.stream()
                 .filter(att -> att.name != null)
                 .forEach(att -> System.out.println(att.name.getText() + getAttValue(att.value)));
@@ -62,13 +59,13 @@ public class AntlrJSPListener extends JSPParserBaseListener
 
     private String getAttValue(JSPParser.HtmlAttributeValueContext value)
     {
-        return "=>" + (value != null ? value.toStringTree() : "nil");
+        return "=>" + (value != null ? value.getText() : "nil");
     }
 
     @Override
     public void enterHtmlAttributeValueExpr(JSPParser.HtmlAttributeValueExprContext ctx)
     {
-        System.out.println("Expresion:" + ctx.toStringTree());
+        System.out.println("Expresion:" + ctx.getText());
     }
 
 }

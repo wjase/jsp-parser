@@ -9,10 +9,13 @@ import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import static java.util.stream.Stream.empty;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.MatcherAssert;
+import static org.hamcrest.Matchers.not;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,7 +71,7 @@ public class JSPLexerHappyCaseTest
         return Arrays.asList(file.listFiles())
                 .stream()
                 .filter(it -> it.getName().contains("jsp"))
-                //                .filter(it -> it.getName().contains("kitchen"))
+                //                .filter(it -> it.getName().contains("welcome"))
                 .sorted()
                 .map(eachFile -> Arrays.asList((Object) eachFile.getName(), (Object) eachFile).toArray())
                 .collect(Collectors.toList());
@@ -78,12 +81,13 @@ public class JSPLexerHappyCaseTest
     {
         // Get our lexer
         JSPLexer lexer = new JSPLexer(new ANTLRInputStream(inputText));
+        MatcherAssert.assertThat(lexer.getAllTokens(), not(empty()));
+        lexer.reset();
 
         // Get a list of matched tokens
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
         tokens.fill();
-
         tokens.getTokens().stream().forEach((token) -> tokenInfo(lexer, token));
 
     }

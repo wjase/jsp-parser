@@ -11,8 +11,8 @@ import java.util.function.Function;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+import static org.hamcrest.MatcherAssert.assertThat;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -42,7 +42,7 @@ public class JspDirectiveTest
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
         tokens.consume();
-        Assert.assertThat(tokens.getTokens().size(), Matchers.greaterThan(0));
+        assertThat(tokens.getTokens().size(), Matchers.greaterThan(0));
         tokens.reset();
 
         // Pass the tokens to the parser

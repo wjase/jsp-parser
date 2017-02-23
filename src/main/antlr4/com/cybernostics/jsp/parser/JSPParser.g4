@@ -5,7 +5,7 @@ parser grammar JSPParser;
 options { tokenVocab=JSPLexer; }
 
 jspDocument
-    : (jspDirective | scriptlet | TOP_WHITESPACES)* xml? (jspDirective | scriptlet | TOP_WHITESPACES)* dtd? (jspDirective | scriptlet | TOP_WHITESPACES)* jspElements*
+    : (jspDirective | scriptlet | WHITESPACES)* xml? (jspDirective | scriptlet | WHITESPACES)* dtd? (jspDirective | scriptlet | WHITESPACES)* jspElements*
     ;
 
 jspElements
@@ -13,29 +13,34 @@ jspElements
     ;
 
 jspElement
-    : (TOP_OPEN_TAG_START|SUB_TAG_OPEN) name=htmlTagName atts+=htmlAttribute*? TAG_CLOSE htmlContent TOP_CLOSE_TAG_START htmlTagName TAG_CLOSE
-    | (TOP_OPEN_TAG_START|SUB_TAG_OPEN) name=htmlTagName atts+=htmlAttribute*? TAG_SLASH_CLOSE
-    | (TOP_OPEN_TAG_START|SUB_TAG_OPEN) name=htmlTagName atts+=htmlAttribute*? TAG_CLOSE
+    : (TAG_BEGIN) name=htmlTagName atts+=htmlAttribute*? TAG_END htmlContent* CLOSE_TAG_BEGIN htmlTagName TAG_END
+    | (TAG_BEGIN) name=htmlTagName atts+=htmlAttribute*? TAG_SLASH_END
+    | (TAG_BEGIN) name=htmlTagName atts+=htmlAttribute*? TAG_END
     | jspDirective
     | scriptlet
     ;
 
 jspDirective
-    : TOP_DIRECTIVE_OPEN name=htmlTagName atts+=htmlAttribute*? TAG_WHITESPACE* TAG_DIRECTIVE_CLOSE
+    : DIRECTIVE_BEGIN name=htmlTagName atts+=htmlAttribute*? TAG_WHITESPACE* DIRECTIVE_END
     ;
 
 htmlContent
-    : (htmlChardata|jspExpression)* ((jspElement | xhtmlCDATA | htmlComment) (jspExpression|htmlChardata)*)*
+    : htmlChardata
+    | jspExpression
+    | jspElement 
+    | xhtmlCDATA 
+    | htmlComment 
+    | scriptlet
     ;
 
 jspExpression
-    : JSPEXPR_CONTENT
+    : EL_EXPR
     ;
 
 htmlAttribute
     : 
       jspElement
-    | name=htmlAttributeName TAG_EQUALS value=htmlAttributeValue
+    | name=htmlAttributeName EQUALS value=htmlAttributeValue
     | name=htmlAttributeName
     | scriptlet
     ;
@@ -45,15 +50,21 @@ htmlAttributeName
     ;
 
 htmlAttributeValue
-    : htmlAttributeValueExpr | htmlAttributeValueConstant 
+    : QUOTE? htmlAttributeValueExpr  QUOTE?
+    | QUOTE htmlAttributeValueConstant? QUOTE
+    | htmlQuotedElement 
     ;
 
 htmlAttributeValueExpr
-    : ATTVAL_EXPR_VALUE
+    : EL_EXPR
     ;
 
 htmlAttributeValueConstant
-    : ATTVAL_CONST_VALUE
+    : ATTVAL_ATTRIBUTE
+    ;
+
+htmlQuotedElement
+    : QUOTE? jspElement QUOTE?
     ;
 
 htmlTagName
@@ -61,27 +72,29 @@ htmlTagName
     ;
 
 htmlChardata
-    : TOP_JSP_STATIC_CONTENT_CHARS_MIXED
-    | TOP_JSP_STATIC_CONTENT_CHARS
-    | TOP_WHITESPACES
+    : JSP_STATIC_CONTENT_CHARS_MIXED
+    | JSP_STATIC_CONTENT_CHARS
+    | WHITESPACES
     ;
 
 htmlMisc
     : htmlComment
-    | TOP_WHITESPACES
+    | htmlChardata
+    | jspExpression
+    | scriptlet
     ;
 
 htmlComment
-    : TOP_JSP_COMMENT
-    | TOP_JSP_CONDITIONAL_COMMENT
+    : JSP_COMMENT
+    | JSP_CONDITIONAL_COMMENT
     ;
 
 xhtmlCDATA
-    : TOP_CDATA
+    : CDATA
     ;
 
 dtd
-    : TOP_DTD dtdElementName (DTD_PUBLIC publicId)? (DTD_SYSTEM systemId)?  DTD_TAG_CLOSE
+    : DTD dtdElementName (DTD_PUBLIC publicId)? (DTD_SYSTEM systemId)?  TAG_END
     ;
 
 dtdElementName
@@ -94,16 +107,9 @@ publicId
 systemId
     : DTD_QUOTED;
 
-xml: TOP_XML_DECLARATION name=htmlTagName atts+=htmlAttribute*? TAG_CLOSE
+xml: XML_DECLARATION name=htmlTagName atts+=htmlAttribute*? TAG_END
     ;
 
 scriptlet
-    : TOP_SCRIPTLET_OPEN BLOB_CONTENT TOP_JSP_CLOSE    ;
+    : SCRIPTLET_OPEN BLOB_CONTENT JSP_END    ;
 
-//script
-//    : SCRIPT_OPEN ( SCRIPT_BODY | SCRIPT_SHORT_BODY)
-//    ;
-
-//style
-//    : STYLE_OPEN ( STYLE_BODY | STYLE_SHORT_BODY)
-//    ;

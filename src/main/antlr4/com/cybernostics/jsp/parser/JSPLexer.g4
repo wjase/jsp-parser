@@ -1,61 +1,89 @@
 lexer grammar  JSPLexer;
 
-TOP_JSP_COMMENT
+JSP_COMMENT
     : '<!--' .*? '-->'
     ;
 
-TOP_JSP_CONDITIONAL_COMMENT
+JSP_CONDITIONAL_COMMENT
     : '<![' .*? ']>'
     ;
 
-TOP_XML_DECLARATION
+XML_DECLARATION
     : '<?xml' -> pushMode(TAG)
     ;
 
-TOP_CDATA
+CDATA
     : '<![CDATA[' .*? ']]>'
     ;
 
 
-TOP_DTD
-    : '<!DOCTYPE' -> pushMode(IN_DTD)
+DTD
+    : DTD_START -> pushMode(IN_DTD)
+    ;
+
+DTD_START
+    : '<!DOCTYPE'
     ;
 
 WHITESPACE_SKIP
     : WHITESPACE -> skip
     ;
 
-TOP_CLOSE_TAG_START
-    : END_ELEMENT_OPEN_TAG -> pushMode(TAG)
+CLOSE_TAG_BEGIN
+    : END_ELEMENT_OPEN_TAG ->pushMode(TAG)
     ;
 
-TOP_OPEN_TAG_START
+TAG_BEGIN
     : BEGIN_ELEMENT_OPEN_TAG -> pushMode(TAG)
     ;
 
-TOP_DIRECTIVE_OPEN
+DIRECTIVE_BEGIN
     : ('<%@'|'<jsp:directive') -> pushMode(TAG)
     ;
 
-TOP_DECLARATION_OPEN
+DECLARATION_BEGIN
     : ('<%!'|'<jsp:declaration') -> pushMode(JSP_BLOB)
     ;
 
-TOP_ECHO_EXPRESSION_OPEN
+ECHO_EXPRESSION_OPEN
     : ('<%='|'<jsp:expression') -> pushMode(JSP_BLOB)
     ;
 
-TOP_SCRIPTLET_OPEN
+SCRIPTLET_OPEN
     : ('<%'|'jsp:scriptlet') -> pushMode(JSP_BLOB)
     ;
 
-TOP_EXPRESSION_OPEN
+EXPRESSION_OPEN
     : ('${'|'#{') ->pushMode(IN_JSP_EXPRESSION)
     ;
 
-TOP_WHITESPACES
+WHITESPACES
     :  (' '|'\t'|'\r'? '\n')+
     ;
+
+DOUBLE_QUOTE
+    : '"'
+    ;
+SINGLE_QUOTE
+    : '\''
+    ;
+
+QUOTE
+    : SINGLE_QUOTE|DOUBLE_QUOTE
+    ;
+
+TAG_END
+   : CLOSE_TAG
+   ;
+
+EQUALS
+    : EQUALS_CHAR 
+    ;
+
+fragment CLOSE_TAG
+    : '>' 
+    ;
+
 
 fragment IDENTIFIER
     : TAG_NameStartChar TAG_NameChar*
@@ -81,10 +109,6 @@ fragment BEGIN_ELEMENT_OPEN_TAG
     : '<'
     ;
 
-fragment CLOSE_TAG
-    : '>'
-    ;
-
 fragment END_ELEMENT_OPEN_TAG
     : '</'
     ;
@@ -93,26 +117,31 @@ fragment EMPTY_ELEMENT_CLOSE
     : '/>'
     ;
 
+fragment ESCAPED_DOLLAR
+    : '\\$'
+    ;
+
 TOP_EL_EXPR
-    : EL_EXPR_TXT
+    : EL_EXPR_TXT -> type(EL_EXPR)
     ;
 
 
-TOP_JSP_STATIC_CONTENT_CHARS_MIXED
+JSP_STATIC_CONTENT_CHARS_MIXED
     :
-        TOP_JSP_STATIC_CONTENT_CHAR+? {(_input.LA(1) == '\$') && (_input.LA(2) == '{')}? -> pushMode(IN_JSP_EXPRESSION)
+        JSP_STATIC_CONTENT_CHAR+? { (_input.LA(1) == '\$') && (_input.LA(2) == '{')}? -> pushMode(IN_JSP_EXPRESSION)
     ;
 
-TOP_JSP_STATIC_CONTENT_CHARS
+JSP_STATIC_CONTENT_CHARS
     :
-        TOP_JSP_STATIC_CONTENT_CHAR+? {(_input.LA(1) == '<') }?
+        JSP_STATIC_CONTENT_CHAR+? {(_input.LA(1) == '<') }?
     ;
 
-TOP_JSP_STATIC_CONTENT_CHAR
+JSP_STATIC_CONTENT_CHAR
     : ~[<\$]+
+    | ESCAPED_DOLLAR
     ;
 
-TOP_JSP_CLOSE
+JSP_END
     : '%>' ->popMode
     ;
 
@@ -140,7 +169,7 @@ DTD_IDENTIFIER
     ;
 
 DTD_TAG_CLOSE
-    : TAG_CLOSE -> popMode
+    : TAG_CLOSE -> type(TAG_END),popMode
     ;
 
 mode JSP_BLOB;
@@ -153,7 +182,7 @@ BLOB_CONTENT
 mode IN_JSP_EXPRESSION;
 
 JSPEXPR_CONTENT
-    : EL_EXPR -> popMode
+    : EL_EXPR -> type(EL_EXPR),popMode
     ;
 
 JSPEXPR_CONTENT_CLOSE
@@ -165,30 +194,29 @@ JSPEXPR_CONTENT_CLOSE
 //
 mode TAG;
 
-TAG_SLASH_CLOSE
+TAG_SLASH_END
     : EMPTY_ELEMENT_CLOSE -> popMode
     ;
 
-SUB_TAG_OPEN: BEGIN_ELEMENT_OPEN_TAG -> pushMode(TAG);
+SUB_TAG_OPEN: BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG);
 
 
 TAG_CLOSE
-    : CLOSE_TAG -> popMode
+    : CLOSE_TAG -> type(TAG_END),popMode
     ;
-
 
 TAG_SLASH
     : '/'
     ;
 
-TAG_DIRECTIVE_CLOSE
-    : TOP_JSP_CLOSE ->popMode
+DIRECTIVE_END
+    : JSP_END ->popMode
     ;
 //
 // lexing mode for attribute values
 //
 TAG_EQUALS
-    : '=' -> pushMode(ATTVALUE)
+    : EQUALS_CHAR -> type(EQUALS),pushMode(ATTVALUE)
     ;
 
 TAG_IDENTIFIER
@@ -199,8 +227,16 @@ TAG_WHITESPACE
     : WHITESPACE ->skip
     ;
 
+fragment SINGLE_QUOTE_STRING_CONTENT
+    : ~[<'] | ESCAPED_SINGLE_QUOTE
+    ;
+
+fragment DOUBLE_QUOTE_STRING_CONTENT
+    : ~[<"] | ESCAPED_DOUBLE_QUOTE
+    ;
+
 fragment WHITESPACE
-    : [ \t\r\n] -> skip
+    : [ \t\r\n]
     ;
 
 fragment INLINE_WHITESPACE
@@ -271,25 +307,63 @@ STYLE_SHORT_BODY
 mode ATTVALUE;
 
 ATTVAL_TAG_OPEN
-    :  BEGIN_ELEMENT_OPEN_TAG -> pushMode(TAG)
+    :  BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG)
     ;
-// an attribute value may have spaces around the '='
-ATTVAL_EXPR_VALUE
-    : TOP_WHITESPACES? (
-            ('\'' (EL_EXPR) '\'')|
-            ('\"' (EL_EXPR) '\"'))  -> popMode
+
+ATTVAL_SINGLE_QUOTE_OPEN
+    : SINGLE_QUOTE -> type(QUOTE),pushMode(ATTVALUE_SINGLE_QUOTE)
+    ;
+
+ATTVAL_DOUBLE_QUOTE_OPEN
+    : DOUBLE_QUOTE -> type(QUOTE),pushMode(ATTVALUE_DOUBLE_QUOTE)
     ;
 
 ATTVAL_CONST_VALUE
-    : TOP_WHITESPACES? ATTVAL_ATTRIBUTE  -> popMode
+    : WHITESPACES? ATTVAL_ATTRIBUTE  -> type(ATTVAL_ATTRIBUTE),popMode
     ;
 
 ATTVAL_ATTRIBUTE
-    : SINGLE_QUOTE SINGLE_QUOTE_STRING_CONTENT* SINGLE_QUOTE
-    | DOUBLE_QUOTE DOUBLE_QUOTE_STRING_CONTENT* DOUBLE_QUOTE
-    | ATTCHARS
+    : ATTCHARS
     | HEXCHARS
     | DECCHARS;
+
+
+mode ATTVALUE_SINGLE_QUOTE;
+
+ATTVAL_SINGLE_QUOTE_CLOSING_QUOTE
+    : SINGLE_QUOTE -> type(QUOTE),popMode,popMode
+    ;
+
+ATTVAL_SINGLE_QUOTE_EXPRESSION
+    : EL_EXPR -> type(EL_EXPR)
+    ;
+
+ATTVAL_SINGLE_QUOTE_TAG_OPEN
+    :  BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG)
+    ;
+
+ATTVAL_SINGLE_QUOTE_TEXT
+    : SINGLE_QUOTE_STRING_CONTENT+ ->type(ATTVAL_ATTRIBUTE)
+    ;
+
+
+mode ATTVALUE_DOUBLE_QUOTE;
+
+ATTVAL_DOUBLE_QUOTE_CLOSING_QUOTE
+    : DOUBLE_QUOTE -> type(QUOTE),popMode,popMode
+    ;
+
+ATTVAL_DOUBLE_QUOTE_EXPRESSION
+    : EL_EXPR -> type(EL_EXPR)
+    ;
+
+ATTVAL_DOUBLE_QUOTE_TAG_OPEN
+    :  BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG)
+    ;
+
+ATTVAL_DOUBLE_QUOTE_TEXT
+    : DOUBLE_QUOTE_STRING_CONTENT+ -> type(ATTVAL_ATTRIBUTE)
+    ;
 
 
 fragment ATTCHAR
@@ -304,11 +378,15 @@ fragment ATTCHAR
     | ':'
     | ';'
     | '#'
-    | [0-9a-zA-Z]
+    | ALPHA_CHAR
+    ;
+
+fragment ALPHA_CHAR
+    : [0-9a-zA-Z]
     ;
 
 fragment ATTCHARS
-    : ATTCHAR+ ' '?
+    : ALPHA_CHAR ATTCHAR* ' '?
     ;
 
 fragment HEXCHARS
@@ -319,31 +397,24 @@ fragment DECCHARS
     : [0-9]+ '%'?
     ;
 
-fragment EL_EXPR_SINGLE
-    :SINGLE_QUOTE (EL_EXPR) SINGLE_QUOTE
-    ;
-
-fragment EL_EXPR_DOUBLE
-    :'"' (EL_EXPR) '"'
-    ;
-
-fragment EL_EXPR
+EL_EXPR
     : '${' ~[<}]* '}'
     ;
 
-fragment DOUBLE_QUOTE
-    : '"'
+
+
+fragment ESCAPED_SINGLE_QUOTE
+    : '\\\''
     ;
 
-SINGLE_QUOTE_STRING_CONTENT
-    : ~[<']
+fragment EQUALS_CHAR
+    : '='
     ;
 
-DOUBLE_QUOTE_STRING_CONTENT
-    : ~[<"]
+fragment ESCAPED_DOUBLE_QUOTE
+    : '\\\''
     ;
 
-fragment SINGLE_QUOTE
-    : '\''
-    ;
+
+
 
