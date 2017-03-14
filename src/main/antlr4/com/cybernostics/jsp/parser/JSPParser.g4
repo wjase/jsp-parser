@@ -85,8 +85,12 @@ htmlMisc
     ;
 
 htmlComment
-    : JSP_COMMENT
+    : JSP_COMMENT_START htmlCommentText? JSP_COMMENT_END 
     | JSP_CONDITIONAL_COMMENT
+    ;
+
+htmlCommentText
+    : JSP_COMMENT_TEXT+?
     ;
 
 xhtmlCDATA

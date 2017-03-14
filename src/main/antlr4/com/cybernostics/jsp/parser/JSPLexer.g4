@@ -1,7 +1,20 @@
 lexer grammar  JSPLexer;
 
-JSP_COMMENT
-    : '<!--' .*? '-->'
+JSP_COMMENT_START
+    : JSP_COMMENT_START_TAG -> pushMode(IN_JSP_COMMENT)
+    ;
+
+
+JSP_COMMENT_END
+    : JSP_COMMENT_END_TAG
+    ;
+
+JSP_COMMENT_START_TAG
+    :'<!--'
+    ;
+
+JSP_COMMENT_END_TAG
+    : '-->'
     ;
 
 JSP_CONDITIONAL_COMMENT
@@ -145,6 +158,18 @@ JSP_END
     : '%>' ->popMode
     ;
 
+mode IN_JSP_COMMENT;
+
+IN_COMMENT_JSP_COMMENT_END_TAG
+    : JSP_COMMENT_END_TAG -> type(JSP_COMMENT_END),popMode
+    ;
+
+JSP_COMMENT_TEXT
+    : ~[-]+
+    | '-' ~[-]
+    | '--' ~[>]
+    ;
+    
 mode IN_DTD;
 //<!DOCTYPE doctypename PUBLIC "publicId" "systemId">
 
@@ -174,6 +199,9 @@ DTD_TAG_CLOSE
 
 mode JSP_BLOB;
 
+BLOB_CLOSE
+   : CLOSE_TAG -> popMode
+   ;
 
 BLOB_CONTENT
     : .
