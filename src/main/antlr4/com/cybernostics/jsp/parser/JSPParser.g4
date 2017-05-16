@@ -9,16 +9,13 @@ jspDocument
     ;
 
 jspElements
-    : htmlMisc* jspElement htmlMisc*
+    : htmlMisc* (jspElement|jspDirective| scriptlet) htmlMisc*
     ;
 
 jspElement
-    : (TAG_BEGIN) name=htmlTagName atts+=htmlAttribute*? TAG_END htmlContent* CLOSE_TAG_BEGIN htmlTagName TAG_END
-    | (TAG_BEGIN) name=htmlTagName atts+=htmlAttribute*? TAG_SLASH_END
-    | (TAG_BEGIN) name=htmlTagName atts+=htmlAttribute*? TAG_END
-    | jspDirective
-    | scriptlet
-    ;
+    : TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_END htmlContent* CLOSE_TAG_BEGIN htmlTagName TAG_END
+    | TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_SLASH_END
+    | TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_END;
 
 jspDirective
     : DIRECTIVE_BEGIN name=htmlTagName atts+=htmlAttribute*? TAG_WHITESPACE* DIRECTIVE_END
@@ -31,6 +28,7 @@ htmlContent
     | xhtmlCDATA 
     | htmlComment 
     | scriptlet
+    | jspDirective
     ;
 
 jspExpression
@@ -50,9 +48,9 @@ htmlAttributeName
     ;
 
 htmlAttributeValue
-    : QUOTE? htmlAttributeValueExpr  QUOTE?
+    : QUOTE htmlQuotedElement QUOTE
+    | QUOTE? htmlAttributeValueExpr  QUOTE?
     | QUOTE htmlAttributeValueConstant? QUOTE
-    | htmlQuotedElement 
     ;
 
 htmlAttributeValueExpr
@@ -64,9 +62,19 @@ htmlAttributeValueConstant
     ;
 
 htmlQuotedElement
-    : QUOTE? jspElement QUOTE?
-    ;
+    : TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_END quotedHtmlContent* CLOSE_TAG_BEGIN htmlTagName TAG_END
+    | TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_SLASH_END
+    | TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_END;
 
+
+quotedHtmlContent
+    : htmlChardata
+    | jspExpression
+    | htmlQuotedElement 
+    | xhtmlCDATA 
+    | htmlComment 
+    | scriptlet
+    ;
 htmlTagName
     : TAG_IDENTIFIER
     ;
@@ -86,13 +94,16 @@ htmlMisc
 
 htmlComment
     : JSP_COMMENT_START htmlCommentText? JSP_COMMENT_END 
-    | JSP_CONDITIONAL_COMMENT
+    | JSP_CONDITIONAL_COMMENT_START htmlConditionalCommentText? JSP_CONDITIONAL_COMMENT_END
     ;
 
 htmlCommentText
     : JSP_COMMENT_TEXT+?
     ;
 
+htmlConditionalCommentText
+    : JSP_CONDITIONAL_COMMENT
+    ;
 xhtmlCDATA
     : CDATA
     ;

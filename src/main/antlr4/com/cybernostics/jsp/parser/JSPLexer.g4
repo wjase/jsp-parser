@@ -4,7 +4,6 @@ JSP_COMMENT_START
     : JSP_COMMENT_START_TAG -> pushMode(IN_JSP_COMMENT)
     ;
 
-
 JSP_COMMENT_END
     : JSP_COMMENT_END_TAG
     ;
@@ -17,8 +16,16 @@ JSP_COMMENT_END_TAG
     : '-->'
     ;
 
-JSP_CONDITIONAL_COMMENT
-    : '<![' .*? ']>'
+JSP_CONDITIONAL_COMMENT_START
+    : JSP_CONDITIONAL_COMMENT_START_TAG -> pushMode(IN_CONDITIONAL_COMMENT)
+    ;
+
+JSP_CONDITIONAL_COMMENT_START_TAG
+    : '<!['
+    ;
+
+JSP_CONDITIONAL_COMMENT_END_TAG
+    : ']>'
     ;
 
 XML_DECLARATION
@@ -28,7 +35,6 @@ XML_DECLARATION
 CDATA
     : '<![CDATA[' .*? ']]>'
     ;
-
 
 DTD
     : DTD_START -> pushMode(IN_DTD)
@@ -103,7 +109,7 @@ fragment IDENTIFIER
     ;
 
 fragment EL_EXPR_BODY
-    : ~[\}]+ 
+    : ~[\\}]+ 
     ;
 
 fragment EL_EXPR_OPEN
@@ -150,12 +156,23 @@ JSP_STATIC_CONTENT_CHARS
     ;
 
 JSP_STATIC_CONTENT_CHAR
-    : ~[<\$]+
+    : ~[<\\$]+
     | ESCAPED_DOLLAR
     ;
 
 JSP_END
     : '%>' ->popMode
+    ;
+
+mode IN_CONDITIONAL_COMMENT;
+
+JSP_CONDITIONAL_COMMENT_END
+    : JSP_CONDITIONAL_COMMENT_END_TAG -> popMode
+    ;
+
+JSP_CONDITIONAL_COMMENT
+    : ~[\]]+
+    | ']' ~[>]
     ;
 
 mode IN_JSP_COMMENT;
@@ -226,7 +243,11 @@ TAG_SLASH_END
     : EMPTY_ELEMENT_CLOSE -> popMode
     ;
 
-SUB_TAG_OPEN: BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG);
+SUB_TAG_OPEN: 
+    BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG);
+
+SUB_END_TAG_OPEN: 
+    BEGIN_ELEMENT_OPEN_TAG -> type(CLOSE_TAG_BEGIN),pushMode(TAG);
 
 
 TAG_CLOSE
@@ -334,9 +355,13 @@ STYLE_SHORT_BODY
 //
 mode ATTVALUE;
 
+ATTVAL_END_TAG_OPEN: 
+    END_ELEMENT_OPEN_TAG -> type(CLOSE_TAG_BEGIN),pushMode(TAG);
+    
+
 ATTVAL_TAG_OPEN
     :  BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG)
-    ;
+;
 
 ATTVAL_SINGLE_QUOTE_OPEN
     : SINGLE_QUOTE -> type(QUOTE),pushMode(ATTVALUE_SINGLE_QUOTE)
@@ -366,6 +391,10 @@ ATTVAL_SINGLE_QUOTE_EXPRESSION
     : EL_EXPR -> type(EL_EXPR)
     ;
 
+ATTVAL_SINGLE_QUOTE_END_TAG_OPEN
+    :  END_ELEMENT_OPEN_TAG -> type(CLOSE_TAG_BEGIN),pushMode(TAG)
+    ;
+
 ATTVAL_SINGLE_QUOTE_TAG_OPEN
     :  BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG)
     ;
@@ -385,6 +414,9 @@ ATTVAL_DOUBLE_QUOTE_EXPRESSION
     : EL_EXPR -> type(EL_EXPR)
     ;
 
+ATTVAL_DOUBLE_QUOTE_END_TAG_OPEN
+    :  END_ELEMENT_OPEN_TAG -> type(CLOSE_TAG_BEGIN),pushMode(TAG)
+    ;
 ATTVAL_DOUBLE_QUOTE_TAG_OPEN
     :  BEGIN_ELEMENT_OPEN_TAG -> type(TAG_BEGIN),pushMode(TAG)
     ;

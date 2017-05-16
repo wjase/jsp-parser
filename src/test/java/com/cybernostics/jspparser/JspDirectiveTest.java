@@ -29,7 +29,6 @@ public class JspDirectiveTest
     public void shouldParseJspDirective()
     {
         String input = "<%@ taglib uri='http://java.sun.com/jstl/core' prefix='c' %>";
-//        parse(input, (parser) -> parser.jspDocument());
         parse(input, (parser) -> parser.jspDirective());
     }
 

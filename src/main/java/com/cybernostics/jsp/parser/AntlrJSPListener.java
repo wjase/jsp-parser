@@ -68,4 +68,14 @@ public class AntlrJSPListener extends JSPParserBaseListener
         System.out.println("Expresion:" + ctx.getText());
     }
 
+    @Override
+    public void enterHtmlQuotedElement(JSPParser.HtmlQuotedElementContext ctx)
+    {
+        System.out.println("Quoted Element:" + ctx.getText());
+        System.out.println("has content" + !ctx.quotedHtmlContent().isEmpty());
+        ctx.atts.stream()
+                .filter(att -> att.name != null)
+                .forEach(att -> System.out.println(att.name.getText() + getAttValue(att.value)));
+    }
+
 }

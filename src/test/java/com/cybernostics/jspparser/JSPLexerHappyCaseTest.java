@@ -71,7 +71,6 @@ public class JSPLexerHappyCaseTest
         return Arrays.asList(file.listFiles())
                 .stream()
                 .filter(it -> it.getName().contains("jsp"))
-                //                .filter(it -> it.getName().contains("welcome"))
                 .sorted()
                 .map(eachFile -> Arrays.asList((Object) eachFile.getName(), (Object) eachFile).toArray())
                 .collect(Collectors.toList());

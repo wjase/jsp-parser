@@ -54,7 +54,6 @@ public class JSPParserHappyCaseTest
     @Test
     public void shouldParse()
     {
-
         try
         {
             System.out.println("Testing:" + jspFile.getPath());
@@ -75,7 +74,6 @@ public class JSPParserHappyCaseTest
         return Arrays.asList(file.listFiles())
                 .stream()
                 .filter(it -> it.getName().contains("jsp"))
-                //                .filter(it -> it.getName().contains("welcome"))
                 .sorted()
                 .map(eachFile -> Arrays.asList((Object) eachFile.getName(), (Object) eachFile).toArray())
                 .collect(Collectors.toList());
@@ -119,7 +117,7 @@ public class JSPParserHappyCaseTest
         final String[] tokenNames = lexer.getTokenNames();
         final int type = token.getType();
         final String tokenName = type > 0 ? tokenNames[type] : "<<UNKNOWN>>";
-        System.out.println(String.format("(%d,%d) %s -> %s", token.getLine(), column, tokenName, token.getText()));
+        System.out.println(String.format("\n\ntoken info :(%d,%d) %s -> %s", token.getLine(), column, tokenName, token.getText()));
     }
 
     private static class ANTLRErrorListenerImpl implements ANTLRErrorListener
