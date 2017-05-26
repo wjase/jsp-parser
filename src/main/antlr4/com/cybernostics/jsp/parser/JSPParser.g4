@@ -65,7 +65,7 @@ htmlAttributeName
     ;
 
 htmlAttributeValue
-    : QUOTE jspQuotedElement QUOTE
+    : QUOTE jspElement QUOTE
     | QUOTE? htmlAttributeValueExpr  QUOTE?
     | QUOTE htmlAttributeValueConstant? QUOTE
     ;
