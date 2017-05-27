@@ -18,13 +18,6 @@ jspElement
     | TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_END;
 
 
-
-jspQuotedElement
-    : TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_END quotedHtmlContent* CLOSE_TAG_BEGIN htmlTagName TAG_END
-    | TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_SLASH_END
-    | TAG_BEGIN name=htmlTagName atts+=htmlAttribute* TAG_END;
-
-
 jspDirective
     : DIRECTIVE_BEGIN name=htmlTagName atts+=htmlAttribute*? TAG_WHITESPACE* DIRECTIVE_END
     ;
@@ -37,15 +30,6 @@ htmlContent
     | htmlComment 
     | scriptlet
     | jspDirective
-    ;
-
-quotedHtmlContent
-    : htmlChardata
-    | jspExpression
-    | jspQuotedElement 
-    | xhtmlCDATA 
-    | htmlComment 
-    | scriptlet
     ;
 
 jspExpression
