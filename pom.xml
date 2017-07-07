@@ -42,6 +42,11 @@
       <scope>test</scope>  
       <type>jar</type> 
     </dependency>  
+    <dependency> 
+      <groupId>org.jetbrains.kotlin</groupId>  
+      <artifactId>kotlin-stdlib</artifactId>  
+      <version>1.0.4</version> 
+    </dependency> 
   </dependencies>  
   <build> 
     <plugins> 
@@ -100,6 +105,27 @@
 
                 </dependencies>
             </plugin>-->  
+      <plugin> 
+        <groupId>org.jetbrains.kotlin</groupId>  
+        <artifactId>kotlin-maven-plugin</artifactId>  
+        <version>1.0.4</version>  
+        <executions> 
+          <execution> 
+            <id>compile</id>  
+            <phase>process-sources</phase>  
+            <goals> 
+              <goal>compile</goal> 
+            </goals> 
+          </execution>  
+          <execution> 
+            <id>test-compile</id>  
+            <phase>process-test-sources</phase>  
+            <goals> 
+              <goal>test-compile</goal> 
+            </goals> 
+          </execution> 
+        </executions> 
+      </plugin> 
     </plugins> 
   </build> 
 </project>
